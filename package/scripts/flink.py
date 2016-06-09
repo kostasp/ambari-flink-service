@@ -43,7 +43,7 @@ class Master(Script):
  
       #Fetch and unzip snapshot build, if no cached flink tar package exists on Ambari server node
       if not os.path.exists(params.temp_file):
-        Execute('wget '+params.flink_download_url+' -O '+params.temp_file+' -a '  + params.flink_log_file, user=params.flink_user)
+      Execute('wget '+params.flink_download_url+' -O '+params.temp_file+' -a '  + params.flink_log_file, user=params.flink_user)
       Execute('tar -zxvf '+params.temp_file+' -C ' + params.flink_install_dir + ' >> ' + params.flink_log_file, user=params.flink_user)
       Execute('mv '+params.flink_install_dir+'/*/* ' + params.flink_install_dir, user=params.flink_user)
                 
@@ -59,13 +59,17 @@ class Master(Script):
       self.install_mvn_repo()      
       # Install packages listed in metainfo.xml
       self.install_packages(env)    
-    
+      # hadoop version 2.7.1.2.3.2.0-2950
       
       Execute('echo Compiling Flink from source')
-      Execute('cd '+params.flink_install_dir+'; git clone https://github.com/apache/flink.git '+params.flink_install_dir +' >> ' + params.flink_log_file)
+      Execute('cd '+params.flink_install_dir+'; git clone '
+                                             'https://github.com/apache/flink.git -b '+params.flink_git_tag_version +' '+params.flink_install_dir +' >> ' + params.flink_log_file)
       Execute('chown -R ' + params.flink_user + ':' + params.flink_group + ' ' + params.flink_install_dir)
                 
-      Execute('cd '+params.flink_install_dir+'; mvn clean install -DskipTests -Dhadoop.version=2.7.1.2.3.2.0-2950 -Pvendor-repos >> ' + params.flink_log_file, user=params.flink_user)
+      Execute('cd '+params.flink_install_dir+'; mvn clean install '
+                                             '-DskipTests '
+                                             '-Dhadoop.version='params.flink_hadoop_version\
+                                                                -Pvendor-repos >> ' + params.flink_log_file, user=params.flink_user)
       
       #update the configs specified by user
       self.configure(env, True)
